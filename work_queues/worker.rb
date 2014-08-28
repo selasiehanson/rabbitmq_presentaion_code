@@ -1,0 +1,30 @@
+#!/Users/selasiehanson/.rvm/rubies/ruby-2.1.0/bin/ruby
+# encoding utf-8
+
+
+require 'rubygems'
+require 'bunny'
+
+
+conn = Bunny.new
+conn.start
+
+ch = conn.create_channel
+
+queue = ch.queue("task_queue", durable: true)
+
+ch.prefetch(1)
+puts " [*] Waiting for messages in #{queue.name}. To exit press CTRL+C"
+
+begin
+  queue.subscribe(ack: true, block: true) do |delivery_info, metadata, body|
+    puts "Received #{body}"
+    #initiate some work
+    sleep 1.0
+    puts " [x] Done"
+    ch.ack(delivery_info.delivery_tag)
+  end
+rescue Interrupt => _
+  conn.close
+end
+
